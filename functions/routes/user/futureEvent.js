@@ -5,19 +5,16 @@ const db = admin.firestore();
 const Joi = require("joi");
 const { generateId, authenticateToken, decodeToken } = require("../../utils");
 
-router.post("/pastEvent/create", authenticateToken, async (req, res) => {
-  const { owner, data } = req.body;
+router.post("/futureEvent/create", authenticateToken, async (req, res) => {
+  const { data } = req.body;
 
   const schema = Joi.object({
-    owner: Joi.object({
-      name: Joi.string().required(),
-      avatar: Joi.string().allow(null),
-    }).required(),
     data: Joi.object({
       title: Joi.string().required(),
       images: Joi.array().items(Joi.string().allow(null, '')).optional(),
       desc: Joi.string().required(),
       eventType: Joi.string().required(),
+      locationImage: Joi.string().allow(null, ''),
       location: Joi.object({
         id: Joi.string().required(),
         name: Joi.string().required(),
@@ -25,8 +22,7 @@ router.post("/pastEvent/create", authenticateToken, async (req, res) => {
         lat: Joi.number().required(),
         lng: Joi.number().required(),
       }).required(),
-      startDate: Joi.number().required(),
-      endDate: Joi.number().required(),
+      operationTime: Joi.string().allow("").optional(),
     }).required(),
   });
 
@@ -36,31 +32,22 @@ router.post("/pastEvent/create", authenticateToken, async (req, res) => {
   }
 
   try {
-    const { title, images, desc, eventType, location, startDate, endDate } = data;
+    const { title, images, desc, eventType, locationImage, location, operationTime } = data;
 
-    const eventId = await generateId({ collection: "pastEvents", idPrefix: "PE", length: 12 });
-    const eventRef = db.collection("pastEvents").doc(eventId);
+    const eventId = await generateId({ collection: "futureEvents", idPrefix: "FE", length: 12 });
+    const eventRef = db.collection("futureEvents").doc(eventId);
     const ownerId = decodeToken(req.get("Authorization")).id;
-    const participants = [{
-      id: ownerId,
-      name: owner.name,
-      avatar: owner.avatar,
-    }];
-    const participantIds = participants.map((p) => p.id);
 
     await eventRef.set({
       id: eventId,
       title: title,
       eventType: eventType,
       ownerId: ownerId,
+      locationImage: locationImage,
       location: location,
-      startDate: startDate,
-      endDate: endDate,
-      participants: participants,
-      participantIds: participantIds,
+      operationTime: operationTime,
       images: images,
       desc: desc,
-      createAt: new Date().getTime(),
     });
     res.status(200).json({ message: "Event created successfully", eventId: eventId });
   } catch (error) {
@@ -71,14 +58,17 @@ router.post("/pastEvent/create", authenticateToken, async (req, res) => {
   }
 });
 
-router.post("/pastEvent/update", authenticateToken, async (req, res) => {
+router.post("/futureEvent/update", authenticateToken, async (req, res) => {
   const { id, data } = req.body;
 
   const schema = Joi.object({
     id: Joi.string().required(),
     data: Joi.object({
       title: Joi.string().required(),
+      images: Joi.array().items(Joi.string().allow(null, '')).optional(),
+      desc: Joi.string().required(),
       eventType: Joi.string().required(),
+      locationImage: Joi.string().allow(null, ''),
       location: Joi.object({
         id: Joi.string().required(),
         name: Joi.string().required(),
@@ -86,10 +76,7 @@ router.post("/pastEvent/update", authenticateToken, async (req, res) => {
         lat: Joi.number().required(),
         lng: Joi.number().required(),
       }).required(),
-      startDate: Joi.number().required(),
-      endDate: Joi.number().required(),
-      images: Joi.array().items(Joi.string().allow(null, '')).optional(),
-      desc: Joi.string().required(),
+      operationTime: Joi.string().allow("").optional(),
     }).required(),
   });
 
@@ -99,8 +86,8 @@ router.post("/pastEvent/update", authenticateToken, async (req, res) => {
   }
 
   try {
-    const { title, images, desc, eventType, location, startDate, endDate } = data;
-    const eventRef = db.collection("pastEvents").doc(id);
+    const { title, images, desc, eventType, locationImage, location, operationTime } = data;
+    const eventRef = db.collection("futureEvents").doc(id);
     const userId = decodeToken(req.get("Authorization")).id;
 
     const eventDoc = await eventRef.get();
@@ -115,12 +102,11 @@ router.post("/pastEvent/update", authenticateToken, async (req, res) => {
     await eventRef.update({
       title: title,
       eventType: eventType,
+      locationImage: locationImage,
       location: location,
-      startDate: startDate,
-      endDate: endDate,
+      operationTime: operationTime,
       images: images,
       desc: desc,
-      createAt: new Date().getTime(),
     });
     res.status(200).json({ message: "Event updated successfully", eventId: id });
   } catch (error) {
@@ -131,7 +117,7 @@ router.post("/pastEvent/update", authenticateToken, async (req, res) => {
   }
 });
 
-router.delete("/pastEvent/delete", authenticateToken, async (req, res) => {
+router.delete("/futureEvent/delete", authenticateToken, async (req, res) => {
   const { id } = req.body;
 
   const schema = Joi.object({
@@ -144,7 +130,7 @@ router.delete("/pastEvent/delete", authenticateToken, async (req, res) => {
   }
 
   try {
-    const eventRef = db.collection("pastEvents").doc(id);
+    const eventRef = db.collection("futureEvents").doc(id);
     const userId = decodeToken(req.get("Authorization")).id;
 
     const eventDoc = await eventRef.get();
