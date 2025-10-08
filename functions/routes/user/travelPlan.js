@@ -186,21 +186,87 @@ router.delete("/travelPlan/delete", authenticateToken, async (req, res) => {
 });
 
 // add, edit and delete daily plan
-router.post("/travelPlan/dailyPlan/add", authenticateToken, async (req, res) => {
+router.post("/travelPlan/dailyPlan/scheduleItem/create", authenticateToken, async (req, res) => {
   const { travelPlanId, dailyPlanId, data } = req.body;
 
   const schema = Joi.object({
     travelPlanId: Joi.string().required(),
     dailyPlanId: Joi.string().required(),
     data: Joi.object({
-      scheduleItem: Joi.array().items(Joi.object({
+      scheduleItem: Joi.object({
         title: Joi.string().required(),
         assignedBy: Joi.string().required(),
         time: Joi.object({
           hour: Joi.number().required(),
           minute: Joi.number().required(),
         }).required(),
-      })).required(),
+      }).required(),
+    }).required(),
+  });
+
+  const { error } = schema.validate(req.body);
+  if (error) {
+    return res.status(400).json({ error: error.details[0].message });
+  }
+
+  try {
+    const { scheduleItem } = data;
+    const eventRef = db.collection("travelPlans").doc(travelPlanId);
+    const userId = decodeToken(req.get("Authorization")).id;
+    scheduleItem.id = await generateId({ collection: "scheduleItems", idPrefix: "SI", length: 12 });
+
+    const eventDoc = await eventRef.get();
+    if (!eventDoc.exists) {
+      return res.status(404).json({ error: "Travel plan not found" });
+    }
+
+    if (eventDoc.data().participants.find((p) => p.id === userId) === undefined) {
+      return res.status(403).json({ error: "Forbidden: You have no right to add daily plan" });
+    }
+
+    const selectedDailyPlan = eventDoc.data().dailyPlans.find((plan) => plan.id === dailyPlanId);
+    if (!selectedDailyPlan) {
+      return res.status(404).json({ error: "Daily plan not found" });
+    }
+
+    selectedDailyPlan.scheduleItems.push(scheduleItem);
+
+    const dailyPlans = eventDoc.data().dailyPlans.map((plan) => {
+      if (plan.id === dailyPlanId) {
+        console.log(selectedDailyPlan);
+        return selectedDailyPlan;
+      }
+      return plan;
+    });
+
+    await eventRef.update({
+      dailyPlans: dailyPlans,
+    });
+    res.status(200).json({ dailyPlan: selectedDailyPlan, message: "Schedule added successfully", eventId: travelPlanId });
+  } catch (error) {
+    res.status(500).json({
+      error: "Error adding schedule",
+      message: error.message
+    });
+  }
+});
+
+router.post("/travelPlan/dailyPlan/scheduleItem/edit", authenticateToken, async (req, res) => {
+  const { travelPlanId, dailyPlanId, scheduleItemId, data } = req.body;
+
+  const schema = Joi.object({
+    travelPlanId: Joi.string().required(),
+    dailyPlanId: Joi.string().required(),
+    scheduleItemId: Joi.string().required(),
+    data: Joi.object({
+      scheduleItem: Joi.object({
+        title: Joi.string().required(),
+        assignedBy: Joi.string().required(),
+        time: Joi.object({
+          hour: Joi.number().required(),
+          minute: Joi.number().required(),
+        }).required(),
+      }).required(),
     }).required(),
   });
 
@@ -223,21 +289,91 @@ router.post("/travelPlan/dailyPlan/add", authenticateToken, async (req, res) => 
       return res.status(403).json({ error: "Forbidden: You have no right to add daily plan" });
     }
 
-    const dailyPlan = eventDoc.data().dailyPlans.find((plan) => plan.id === dailyPlanId);
-    if (!dailyPlan) {
+    const selectedDailyPlan = eventDoc.data().dailyPlans.find((plan) => plan.id === dailyPlanId);
+    if (!selectedDailyPlan) {
       return res.status(404).json({ error: "Daily plan not found" });
     }
 
-    dailyPlan.scheduleItems.add(scheduleItem);
-    await eventRef.update({
-      dailyPlans: eventDoc.data().dailyPlans,
+    const selectedScheduleItem = selectedDailyPlan.scheduleItems.find((item) => item.id === scheduleItemId);
+    if (!selectedScheduleItem) {
+      return res.status(404).json({ error: "Schedule item not found" });
+    }
+
+    selectedScheduleItem.title = scheduleItem.title;
+    selectedScheduleItem.assignedBy = scheduleItem.assignedBy;
+    selectedScheduleItem.time = scheduleItem.time;
+
+    const dailyPlans = eventDoc.data().dailyPlans.map((plan) => {
+      if (plan.id === dailyPlanId) {
+        return selectedDailyPlan;
+      }
+      return plan;
     });
-    res.status(200).json({ message: "Daily plan updated successfully", eventId: travelPlanId });
+
+    await eventRef.update({
+      dailyPlans: dailyPlans,
+    });
+    res.status(200).json({ dailyPlan: selectedDailyPlan, message: "Schedule edited successfully", eventId: travelPlanId });
   } catch (error) {
     res.status(500).json({
-      error: "Error updating daily plan",
+      error: "Error editing schedule",
       message: error.message
     });
+  }
+});
+
+router.delete("/travelPlan/dailyPlan/scheduleItem/delete", authenticateToken, async (req, res) => {
+  const { travelPlanId, dailyPlanId, scheduleItemId } = req.body;
+
+  const schema = Joi.object({
+    travelPlanId: Joi.string().required(),
+    dailyPlanId: Joi.string().required(),
+    scheduleItemId: Joi.string().required(),
+  });
+
+  const { error } = schema.validate(req.body);
+  if (error) {
+    return res.status(400).json({ error: error.details[0].message });
+  }
+
+  try {
+    const eventRef = db.collection("travelPlans").doc(travelPlanId);
+    const userId = decodeToken(req.get("Authorization")).id;
+
+    const eventDoc = await eventRef.get();
+    if (!eventDoc.exists) {
+      return res.status(404).json({ error: "Travel plan not found" });
+    }
+
+    if (eventDoc.data().participants.find((p) => p.id === userId) === undefined) {
+      return res.status(403).json({ error: "Forbidden: You have no right to add daily plan" });
+    }
+
+    const selectedDailyPlan = eventDoc.data().dailyPlans.find((plan) => plan.id === dailyPlanId);
+    if (!selectedDailyPlan) {
+      return res.status(404).json({ error: "Daily plan not found" });
+    }
+
+    const selectedScheduleItem = selectedDailyPlan.scheduleItems.find((item) => item.id === scheduleItemId);
+    if (!selectedScheduleItem) {
+      return res.status(404).json({ error: "Schedule item not found" });
+    }
+
+    selectedDailyPlan.scheduleItems = selectedDailyPlan.scheduleItems.filter((item) => item.id !== scheduleItemId);
+
+    const dailyPlans = eventDoc.data().dailyPlans.map((plan) => {
+      if (plan.id === dailyPlanId) {
+        return selectedDailyPlan;
+      }
+      return plan;
+    });
+
+    await eventRef.update({
+      dailyPlans: dailyPlans,
+    });
+    res.status(200).json({ dailyPlan: selectedDailyPlan, message: "Schedule deleted successfully", eventId: travelPlanId });
+  } catch (error) {
+    res.status(500).json({ error: "Error deleting schedule", message: error.message });
   }
 });
 
