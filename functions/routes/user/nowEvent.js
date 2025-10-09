@@ -127,7 +127,7 @@ router.post("/nowEvent/update", authenticateToken, async (req, res) => {
       maxParticipants: maxParticipants,
       images: images,
       desc: desc,
-      createAt: new Date().getTime(),
+      updateAt: new Date().getTime(),
     });
     res.status(200).json({ message: "Event updated successfully", eventId: id });
   } catch (error) {

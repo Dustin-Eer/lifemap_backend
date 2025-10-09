@@ -185,7 +185,6 @@ router.delete("/travelPlan/delete", authenticateToken, async (req, res) => {
   }
 });
 
-// add, edit and delete daily plan
 router.post("/travelPlan/dailyPlan/scheduleItem/create", authenticateToken, async (req, res) => {
   const { travelPlanId, dailyPlanId, data } = req.body;
 
@@ -251,7 +250,7 @@ router.post("/travelPlan/dailyPlan/scheduleItem/create", authenticateToken, asyn
   }
 });
 
-router.post("/travelPlan/dailyPlan/scheduleItem/edit", authenticateToken, async (req, res) => {
+router.post("/travelPlan/dailyPlan/scheduleItem/update", authenticateToken, async (req, res) => {
   const { travelPlanId, dailyPlanId, scheduleItemId, data } = req.body;
 
   const schema = Joi.object({

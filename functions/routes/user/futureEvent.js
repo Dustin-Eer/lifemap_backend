@@ -150,4 +150,142 @@ router.delete("/futureEvent/delete", authenticateToken, async (req, res) => {
   }
 });
 
+router.post("/futureEvent/comment/create", authenticateToken, async (req, res) => {
+  const { eventId, comment } = req.body;
+
+  const schema = Joi.object({
+    eventId: Joi.string().required(),
+    comment: Joi.object({
+      name: Joi.string().required(),
+      avatar: Joi.string().uri().required(),
+      content: Joi.string().required(),
+    }).required(),
+  }).required();
+
+  const { error } = schema.validate(req.body);
+  if (error) {
+    return res.status(400).json({ error: error.details[0].message });
+  }
+
+
+  try {
+    const { name, avatar, content } = comment;
+    const commentId = await generateId({ collection: "comments", idPrefix: "C", length: 12 });
+    const commentRef = db.collection("comments").doc(commentId);
+    const commentDoc = await commentRef.get();
+    if (commentDoc.exists) {
+      return res.status(400).json({ error: "Comment already exists" });
+    }
+
+    const eventDoc = await db.collection("futureEvents").doc(eventId).get();
+    if (!eventDoc.exists) {
+      return res.status(404).json({ error: "Event not found" });
+    }
+
+    await commentRef.set({
+      id: commentId,
+      name: name,
+      avatar: avatar,
+      content: content,
+      eventId: eventId,
+      createdAt: new Date().getTime(),
+      likeCount: 0,
+    });
+
+    res.status(200).json({ message: "Comment added successfully", commentId: commentId });
+  } catch (error) {
+    res.status(500).json({
+      error: "Error adding comment",
+      message: error.message
+    });
+  }
+});
+
+router.post("/futureEvent/comment/update", authenticateToken, async (req, res) => {
+  const { commentId, comment } = req.body;
+
+  const schema = Joi.object({
+    commentId: Joi.string().required(),
+    comment: Joi.object({
+      name: Joi.string().required(),
+      avatar: Joi.string().uri().required(),
+      content: Joi.string().required(),
+    }).required(),
+  }).required();
+
+  const { error } = schema.validate(req.body);
+  if (error) {
+    return res.status(400).json({ error: error.details[0].message });
+  }
+
+  try {
+    const { name, avatar, content } = comment;
+    const commentRef = db.collection("comments").doc(commentId);
+    const commentDoc = await commentRef.get();
+    if (!commentDoc.exists) {
+      return res.status(404).json({ error: "Comment not found" });
+    }
+
+    const eventDoc = await db.collection("futureEvents").doc(commentDoc.data().eventId).get();
+    if (!eventDoc.exists) {
+      return res.status(404).json({ error: "Event not found" });
+    }
+
+    // if (commentDoc.data().ownerId !== userId) {
+    //   return res.status(403).json({ error: "Forbidden: You have no right to delete this comment" });
+    // }
+
+    await commentRef.update({
+      name: name,
+      avatar: avatar,
+      content: content,
+      updateAt: new Date().getTime(),
+    });
+    res.status(200).json({ message: "Comment updated successfully", commentId: commentId });
+  } catch (error) {
+    res.status(500).json({
+      error: "Error updating comment",
+      message: error.message
+    });
+  }
+});
+
+router.delete("/futureEvent/comment/delete", authenticateToken, async (req, res) => {
+  const { commentId } = req.body;
+
+  const schema = Joi.object({
+    commentId: Joi.string().required(),
+  });
+
+  const { error } = schema.validate(req.body);
+  if (error) {
+    return res.status(400).json({ error: error.details[0].message });
+  }
+
+  try {
+    const commentRef = db.collection("comments").doc(commentId);
+    const userId = decodeToken(req.get("Authorization")).id;
+
+    const commentDoc = await commentRef.get();
+    if (!commentDoc.exists) {
+      return res.status(404).json({ error: "Comment not found" });
+    }
+
+    // if (commentDoc.data().ownerId !== userId) {
+    //   return res.status(403).json({ error: "Forbidden: You have no right to delete this comment" });
+    // }
+
+    const eventDoc = await db.collection("futureEvents").doc(commentDoc.data().eventId).get();
+    if (!eventDoc.exists) {
+      return res.status(404).json({ error: "Event not found" });
+    }
+
+    await commentRef.delete({
+    });
+    res.status(200).json({ message: "Comment deleted successfully", commentId: commentId });
+  } catch (error) {
+    res.status(500).json({ error: "Error deleting comment", message: error.message });
+  }
+});
+
 module.exports = router;
