@@ -14,7 +14,7 @@ router.post("/futureEvent/create", authenticateToken, async (req, res) => {
       images: Joi.array().items(Joi.string().allow(null, '')).optional(),
       desc: Joi.string().required(),
       eventType: Joi.string().required(),
-      locationImage: Joi.string().allow(null, ''),
+      locationAvatar: Joi.string().allow(null, ''),
       location: Joi.object({
         id: Joi.string().required(),
         name: Joi.string().required(),
@@ -32,7 +32,7 @@ router.post("/futureEvent/create", authenticateToken, async (req, res) => {
   }
 
   try {
-    const { title, images, desc, eventType, locationImage, location, operationTime } = data;
+    const { title, images, desc, eventType, locationAvatar, location, operationTime } = data;
 
     const eventId = await generateId({ collection: "futureEvents", idPrefix: "FE", length: 12 });
     const eventRef = db.collection("futureEvents").doc(eventId);
@@ -43,7 +43,7 @@ router.post("/futureEvent/create", authenticateToken, async (req, res) => {
       title: title,
       eventType: eventType,
       ownerId: ownerId,
-      locationImage: locationImage,
+      locationAvatar: locationAvatar,
       location: location,
       operationTime: operationTime,
       images: images,
@@ -68,7 +68,7 @@ router.post("/futureEvent/update", authenticateToken, async (req, res) => {
       images: Joi.array().items(Joi.string().allow(null, '')).optional(),
       desc: Joi.string().required(),
       eventType: Joi.string().required(),
-      locationImage: Joi.string().allow(null, ''),
+      locationAvatar: Joi.string().allow(null, ''),
       location: Joi.object({
         id: Joi.string().required(),
         name: Joi.string().required(),
@@ -86,7 +86,7 @@ router.post("/futureEvent/update", authenticateToken, async (req, res) => {
   }
 
   try {
-    const { title, images, desc, eventType, locationImage, location, operationTime } = data;
+    const { title, images, desc, eventType, locationAvatar, location, operationTime } = data;
     const eventRef = db.collection("futureEvents").doc(id);
     const userId = decodeToken(req.get("Authorization")).id;
 
@@ -102,7 +102,7 @@ router.post("/futureEvent/update", authenticateToken, async (req, res) => {
     await eventRef.update({
       title: title,
       eventType: eventType,
-      locationImage: locationImage,
+      locationAvatar: locationAvatar,
       location: location,
       operationTime: operationTime,
       images: images,
