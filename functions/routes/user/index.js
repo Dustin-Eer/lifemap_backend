@@ -6,6 +6,6 @@ router.use(require("./pastEvent"));
 router.use(require("./nowEvent"));
 router.use(require("./futureEvent"));
 router.use(require("./travelPlan"));
-
+router.use(require("./reference"));
 
 module.exports = router;
