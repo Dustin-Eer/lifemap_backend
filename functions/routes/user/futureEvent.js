@@ -34,7 +34,7 @@ router.post("/futureEvent/create", authenticateToken, async (req, res) => {
   try {
     const { title, images, desc, eventType, locationAvatar, location, operationTime } = data;
 
-    const eventId = await generateId({ collection: "futureEvents", idPrefix: "FE", length: 12 });
+    const eventId = await generateId({ collection: "futureEvents", idPrefix: "FE"});
     const eventRef = db.collection("futureEvents").doc(eventId);
     const ownerId = decodeToken(req.get("Authorization")).id;
 

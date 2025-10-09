@@ -40,7 +40,7 @@ router.post("/reference/create", authenticateToken, async (req, res) => {
 
   try {
     const { referenceName, title, eventType, eventStatus, location, participants, participantIds, maxParticipants, image, desc } = data;
-    const referenceId = await generateId({ collection: "reference", idPrefix: "RF", length: 12 });
+    const referenceId = await generateId({ collection: "reference", idPrefix: "RF"});
     const referenceRef = db.collection("references").doc(referenceId);
     const ownerId = decodeToken(req.get("Authorization")).id;
 

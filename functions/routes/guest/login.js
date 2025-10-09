@@ -2,7 +2,7 @@ const express = require("express");
 const router = new express.Router();
 const admin = require("firebase-admin");
 const db = admin.firestore();
-const {generateRandomNum, generateToken, generateUserId} = require("../../utils");
+const {generateRandomNum, generateToken, generateId} = require("../../utils");
 const joi = require("joi");
 
 router.post("/otp", async (req, res) => {
@@ -158,18 +158,8 @@ router.post("/createAccount", async (req, res) => {
       return res.status(200).json({message: "This phone number is already registered", users: []});
     }
 
-    let userId = generateUserId();
-    let userExists = true;
-    let loopCount = 0;
-    while (userExists) {
-      if (loopCount >= 10) {
-        return res.status(500).json({error: "Error creating user. Please try again."});
-      }
-      const userSnapshot = await db.collection("users").doc(userId).get();
-      userExists = userSnapshot.exists;
-      loopCount++;
-      userId = generateUserId();
-    }
+    let userId = await generateId({collection: "users", idPrefix: "US"});
+    console.log('done userId');
 
     const userData = {
       id: userId,
@@ -183,8 +173,10 @@ router.post("/createAccount", async (req, res) => {
       token: generateToken({id: userId, phoneNo: phoneNo}),
     };
 
-    const user = await db.collection("users").doc(userId).set(userData);
-    return res.status(200).json({message: "User created successfully", user: {id: user.id, ...userData}});
+    const userRef = db.collection("users").doc(userId);
+    await userRef.set(userData);
+
+    return res.status(200).json({message: "User created successfully", user: {id: userId, ...userData}});
   } catch (error) {
     return res.status(500).json({error: "Error creating user", message: error.message});
   }

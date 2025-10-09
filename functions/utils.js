@@ -13,8 +13,8 @@ const generateToken = (user) => {
     throw new Error("User object must have id and phoneNo properties");
   }
   return jwt.sign(
-      {id: user.id, email: user.phoneNo},
-      secret,
+    { id: user.id, email: user.phoneNo },
+    secret,
   );
 };
 
@@ -26,29 +26,23 @@ const decodeToken = (token) => {
   }
 };
 
-
-const generateUserId = () => {
+const generateId = ({ collection, idPrefix, length }) => {
   const currentYear = new Date().getFullYear().toString().slice(-2);
   const currentMonth = (new Date().getMonth() + 1).toString();
-  const randomNum = generateRandomNum(6).toString().padStart(6, "0");
-  return `US${currentYear}${currentMonth}${randomNum}`;
-};
+  const counterRef = db.collection("meta").doc(`${collection}${currentYear}${currentMonth}Counter`);
 
-const generateId = ({collection, idPrefix, length}) => {
-  const counterRef = db.collection("meta").doc(`${collection}Counter`);
-
-    if(counterRef >= 999999999999){
-      throw new Error("Counter reached max limit");
-    }
+  if (counterRef >= 999999999999) {
+    throw new Error("Counter reached max limit");
+  }
 
   return db.runTransaction(async (t) => {
     const doc = await t.get(counterRef);
     const current = doc.exists ? (doc.get("lastNumber") || 0) : 0;
     const newNumber = current + 1;
 
-    t.set(counterRef, {lastNumber: newNumber}, {merge: true});
+    t.set(counterRef, { lastNumber: newNumber }, { merge: true });
 
-    const newId = `${idPrefix}${newNumber.toString().padStart(length || 9, "0")}`;
+    const newId = `${idPrefix}${currentYear}${currentMonth}${newNumber.toString().padStart(length || 9, "0")}`;
     return newId;
   });
 };
@@ -56,10 +50,10 @@ const generateId = ({collection, idPrefix, length}) => {
 const authenticateToken = (req, res, next) => {
   const token = req.get("Authorization");
 
-  if (!token) return res.status(401).json({error: `No token provided`});
+  if (!token) return res.status(401).json({ error: `No token provided` });
 
   jwt.verify(token, secret, (err, decoded) => {
-    if (err) return res.status(403).json({error: "Invalid or expired token"}); // invalid or expired
+    if (err) return res.status(403).json({ error: "Invalid or expired token" }); // invalid or expired
     req.user = decoded; // store payload in req.user
     next();
   });
@@ -68,7 +62,6 @@ const authenticateToken = (req, res, next) => {
 module.exports = {
   generateRandomNum: generateRandomNum,
   generateToken: generateToken,
-  generateUserId: generateUserId,
   generateId: generateId,
   authenticateToken: authenticateToken,
   decodeToken: decodeToken,

@@ -29,7 +29,7 @@ router.post("/travelPlan/create", authenticateToken, async (req, res) => {
     const { title } = data;
     const startDate = new Date(data.startDate).setHours(0, 0, 0, 0);
     const endDate = new Date(data.endDate).setHours(0, 0, 0, 0);
-    const eventId = await generateId({ collection: "travelPlans", idPrefix: "TP", length: 12 });
+    const eventId = await generateId({ collection: "travelPlans", idPrefix: "TP"});
     const eventRef = db.collection("travelPlans").doc(eventId);
     const ownerId = decodeToken(req.get("Authorization")).id;
     const durationInDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
@@ -212,7 +212,7 @@ router.post("/travelPlan/dailyPlan/scheduleItem/create", authenticateToken, asyn
     const { scheduleItem } = data;
     const eventRef = db.collection("travelPlans").doc(travelPlanId);
     const userId = decodeToken(req.get("Authorization")).id;
-    scheduleItem.id = await generateId({ collection: "scheduleItems", idPrefix: "SI", length: 12 });
+    scheduleItem.id = await generateId({ collection: "scheduleItems", idPrefix: "SI", length: 14 });
 
     const eventDoc = await eventRef.get();
     if (!eventDoc.exists) {

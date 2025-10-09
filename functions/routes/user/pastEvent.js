@@ -38,7 +38,7 @@ router.post("/pastEvent/create", authenticateToken, async (req, res) => {
   try {
     const { title, images, desc, eventType, location, startDate, endDate } = data;
 
-    const eventId = await generateId({ collection: "pastEvents", idPrefix: "PE", length: 12 });
+    const eventId = await generateId({ collection: "pastEvents", idPrefix: "PE"});
     const eventRef = db.collection("pastEvents").doc(eventId);
     const ownerId = decodeToken(req.get("Authorization")).id;
     const participants = [{
