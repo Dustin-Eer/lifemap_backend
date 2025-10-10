@@ -95,7 +95,7 @@ router.post("/chat/update", authenticateToken, async (req, res) => {
       }
 
       if (!participantIds.includes(ownerId)) {
-        throw ({ message: `Owner ${ownerId} must be in the participant list` });
+        throw ({ message: `you are not one of the member in the chat` });
       }
 
       userList.push({ id, userDoc, userRef });
@@ -203,7 +203,7 @@ router.post("/chat/sendMessage", authenticateToken, async (req, res) => {
     owner.userId = decodeToken(req.get("Authorization")).id;
     
     if (!receiverIds.includes(owner.userId)) {
-      throw ({ message: `Owner ${owner.userId} must be one of the member in the chat` });
+      throw ({ message: `you are not one of the member in the chat` });
     }
 
     const userList = [];
