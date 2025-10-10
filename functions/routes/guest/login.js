@@ -159,7 +159,6 @@ router.post("/createAccount", async (req, res) => {
     }
 
     let userId = await generateId({collection: "users", idPrefix: "US"});
-    console.log('done userId');
 
     const userData = {
       id: userId,

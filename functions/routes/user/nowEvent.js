@@ -39,7 +39,7 @@ router.post("/nowEvent/create", authenticateToken, async (req, res) => {
 
   try {
     const { title, eventType, eventStatus, location, startDate, endDate, maxParticipants, images, desc } = data;
-    const eventId = await generateId({ collection: "nowEvents", idPrefix: "NE", length: 12 });
+    const eventId = await generateId({ collection: "nowEvents", idPrefix: "NE"});
     const eventRef = db.collection("nowEvents").doc(eventId);
     const ownerId = decodeToken(req.get("Authorization")).id;
     const participants = [{
