@@ -3,10 +3,10 @@ const router = new express.Router();
 const admin = require("firebase-admin");
 const db = admin.firestore();
 const Joi = require("joi");
-const { generateId, authenticateToken, decodeToken } = require("../../utils");
+const {generateId, authenticateToken, decodeToken} = require("../../utils");
 
 router.post("/pastEvent/create", authenticateToken, async (req, res) => {
-  const { owner, data } = req.body;
+  const {owner, data} = req.body;
 
   const schema = Joi.object({
     owner: Joi.object({
@@ -15,7 +15,7 @@ router.post("/pastEvent/create", authenticateToken, async (req, res) => {
     }).required(),
     data: Joi.object({
       title: Joi.string().required(),
-      images: Joi.array().items(Joi.string().allow(null, '')).optional(),
+      images: Joi.array().items(Joi.string().allow(null, "")).optional(),
       desc: Joi.string().required(),
       eventType: Joi.string().required(),
       location: Joi.object({
@@ -30,15 +30,15 @@ router.post("/pastEvent/create", authenticateToken, async (req, res) => {
     }).required(),
   });
 
-  const { error } = schema.validate(req.body);
+  const {error} = schema.validate(req.body);
   if (error) {
-    return res.status(400).json({ error: error.details[0].message });
+    return res.status(400).json({error: error.details[0].message});
   }
 
   try {
-    const { title, images, desc, eventType, location, startDate, endDate } = data;
+    const {title, images, desc, eventType, location, startDate, endDate} = data;
 
-    const eventId = await generateId({ collection: "pastEvents", idPrefix: "PE"});
+    const eventId = await generateId({collection: "pastEvents", idPrefix: "PE"});
     const eventRef = db.collection("pastEvents").doc(eventId);
     const ownerId = decodeToken(req.get("Authorization")).id;
     const participants = [{
@@ -62,17 +62,17 @@ router.post("/pastEvent/create", authenticateToken, async (req, res) => {
       desc: desc,
       createAt: new Date().getTime(),
     });
-    res.status(200).json({ message: "Event created successfully", eventId: eventId });
+    res.status(200).json({message: "Event created successfully", eventId: eventId});
   } catch (error) {
     res.status(500).json({
       error: "Error creating event",
-      message: error.message
+      message: error.message,
     });
   }
 });
 
 router.post("/pastEvent/update", authenticateToken, async (req, res) => {
-  const { id, data } = req.body;
+  const {id, data} = req.body;
 
   const schema = Joi.object({
     id: Joi.string().required(),
@@ -88,28 +88,28 @@ router.post("/pastEvent/update", authenticateToken, async (req, res) => {
       }).required(),
       startDate: Joi.number().required(),
       endDate: Joi.number().required(),
-      images: Joi.array().items(Joi.string().allow(null, '')).optional(),
+      images: Joi.array().items(Joi.string().allow(null, "")).optional(),
       desc: Joi.string().required(),
     }).required(),
   });
 
-  const { error } = schema.validate(req.body);
+  const {error} = schema.validate(req.body);
   if (error) {
-    return res.status(400).json({ error: error.details[0].message });
+    return res.status(400).json({error: error.details[0].message});
   }
 
   try {
-    const { title, images, desc, eventType, location, startDate, endDate } = data;
+    const {title, images, desc, eventType, location, startDate, endDate} = data;
     const eventRef = db.collection("pastEvents").doc(id);
     const userId = decodeToken(req.get("Authorization")).id;
 
     const eventDoc = await eventRef.get();
     if (!eventDoc.exists) {
-      return res.status(404).json({ error: "Event not found" });
+      return res.status(404).json({error: "Event not found"});
     }
 
     if (eventDoc.data().ownerId !== userId) {
-      return res.status(403).json({ error: "Forbidden: You are not the owner of this event" });
+      return res.status(403).json({error: "Forbidden: You are not the owner of this event"});
     }
 
     await eventRef.update({
@@ -122,25 +122,25 @@ router.post("/pastEvent/update", authenticateToken, async (req, res) => {
       desc: desc,
       updateAt: new Date().getTime(),
     });
-    res.status(200).json({ message: "Event updated successfully", eventId: id });
+    res.status(200).json({message: "Event updated successfully", eventId: id});
   } catch (error) {
     res.status(500).json({
       error: "Error updating event",
-      message: error.message
+      message: error.message,
     });
   }
 });
 
 router.delete("/pastEvent/delete", authenticateToken, async (req, res) => {
-  const { id } = req.body;
+  const {id} = req.body;
 
   const schema = Joi.object({
     id: Joi.string().required(),
   });
 
-  const { error } = schema.validate(req.body);
+  const {error} = schema.validate(req.body);
   if (error) {
-    return res.status(400).json({ error: error.details[0].message });
+    return res.status(400).json({error: error.details[0].message});
   }
 
   try {
@@ -149,18 +149,18 @@ router.delete("/pastEvent/delete", authenticateToken, async (req, res) => {
 
     const eventDoc = await eventRef.get();
     if (!eventDoc.exists) {
-      return res.status(404).json({ error: "Event not found" });
+      return res.status(404).json({error: "Event not found"});
     }
 
     if (eventDoc.data().ownerId !== userId) {
-      return res.status(403).json({ error: "Forbidden: You are not the owner of this event" });
+      return res.status(403).json({error: "Forbidden: You are not the owner of this event"});
     }
 
     // send notification to all participant
     await eventRef.delete();
-    res.status(200).json({ message: "Event deleted successfully", eventId: id });
+    res.status(200).json({message: "Event deleted successfully", eventId: id});
   } catch (error) {
-    res.status(500).json({ error: "Error deleting event", message: error.message });
+    res.status(500).json({error: "Error deleting event", message: error.message});
   }
 });
 

@@ -27,12 +27,14 @@ router.post("/otp", async (req, res) => {
   const otp = generateRandomNum(6);
   try {
     const snapshot = await db.collection("users").where("phoneNo", "==", phoneNo).get();
-    if (!snapshot.empty) {
+
+    if (snapshot.docs.length > 0) {
       await db.collection("users").doc(snapshot.docs[0].id).update({
         otp: otp,
         otpTimestamp: new Date().getTime(),
       });
     }
+
     res.status(200).json({message: "OTP sent successfully", otp: otp});
   } catch (error) {
     res.status(500).json({error: "Error sending OTP", message: error.message});
@@ -69,12 +71,13 @@ router.post("/loginOrRegister", async (req, res) => {
     }
 
     const timeNow = new Date().getTime();
-    // if (!user.otpTimestamp || (timeNow - user.otpTimestamp) > (10 * 60 * 1000)) {
-    //   if (!user.otpTimestamp || (timeNow - user.otpTimestamp) > (10 * 60 * 1000)) {
-    //   return res.status(400).json({error: "OTP expired"});
-    // }
+    if (!user.otpTimestamp || (timeNow - user.otpTimestamp) > (10 * 60 * 1000)) {
+      if (!user.otpTimestamp || (timeNow - user.otpTimestamp) > (10 * 60 * 1000)) {
+        return res.status(400).json({error: "OTP expired"});
+      }
+    }
     const token = generateToken(user);
-    
+
     await db.collection("users").doc(snapshot.docs[0].id).update({
       token: token,
       otp: null,
@@ -158,7 +161,7 @@ router.post("/createAccount", async (req, res) => {
       return res.status(200).json({message: "This phone number is already registered", users: []});
     }
 
-    let userId = await generateId({collection: "users", idPrefix: "US"});
+    const userId = await generateId({collection: "users", idPrefix: "US"});
 
     const userData = {
       id: userId,

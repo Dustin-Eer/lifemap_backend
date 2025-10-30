@@ -3,25 +3,25 @@ const router = new express.Router();
 const admin = require("firebase-admin");
 const db = admin.firestore();
 const Joi = require("joi");
-const { decodeToken, generateId, authenticateToken } = require("../../utils");
+const {decodeToken, generateId, authenticateToken} = require("../../utils");
 
 router.post("/chat/create", authenticateToken, async (req, res) => {
-  const { participantIds } = req.body;
+  const {participantIds} = req.body;
 
   const schema = Joi.object({
     participantIds: Joi.array().items(Joi.string()).required(),
   }).required();
 
-  const { error } = schema.validate(req.body);
+  const {error} = schema.validate(req.body);
   if (error) {
-    return res.status(400).json({ error: error.details[0].message });
+    return res.status(400).json({error: error.details[0].message});
   }
 
   try {
-    const chatId = await generateId({ collection: "chats", idPrefix: "CH" });
+    const chatId = await generateId({collection: "chats", idPrefix: "CH"});
     const ownerId = decodeToken(req.get("Authorization")).id;
     participantIds.push(
-      ownerId,
+        ownerId,
     );
 
     const userList = [];
@@ -30,10 +30,10 @@ router.post("/chat/create", authenticateToken, async (req, res) => {
       const userDoc = await userRef.get();
 
       if (!userDoc.exists) {
-        throw ({ message: `User ${id} does not exist` });
+        throw new Error({message: `User ${id} does not exist`});
       }
 
-      userList.push({ id, userDoc, userRef });
+      userList.push({id, userDoc, userRef});
     }));
 
     await Promise.all(userList.map(async (user) => {
@@ -41,24 +41,24 @@ router.post("/chat/create", authenticateToken, async (req, res) => {
       chats.push({
         id: chatId,
         participantIds: participantIds,
-      })
+      });
 
       await user.userRef.set({
         chats: chats,
       });
     }));
 
-    res.status(200).json({ message: "Chat created successfully", chatId: chatId });
+    res.status(200).json({message: "Chat created successfully", chatId: chatId});
   } catch (error) {
     res.status(500).json({
       error: "Error creating chat",
-      message: error.message
+      message: error.message,
     });
   }
 });
 
 router.post("/chat/update", authenticateToken, async (req, res) => {
-  const { chatId, participantIds, data } = req.body;
+  const {chatId, participantIds, data} = req.body;
 
   const schema = Joi.object({
     chatId: Joi.string().required(),
@@ -69,13 +69,13 @@ router.post("/chat/update", authenticateToken, async (req, res) => {
     }).required(),
   }).required();
 
-  const { error } = schema.validate(req.body);
+  const {error} = schema.validate(req.body);
   if (error) {
-    return res.status(400).json({ error: error.details[0].message });
+    return res.status(400).json({error: error.details[0].message});
   }
 
   try {
-    const { groupName, groupAvatar } = data;
+    const {groupName, groupAvatar} = data;
     const ownerId = decodeToken(req.get("Authorization")).id;
 
     const userList = [];
@@ -85,20 +85,20 @@ router.post("/chat/update", authenticateToken, async (req, res) => {
       const userDoc = await userRef.get();
 
       if (!userDoc.exists) {
-        throw ({ message: `User ${id} does not exist` });
+        throw new Error({message: `User ${id} does not exist`});
       }
       const chats = userDoc.data().chats || [];
 
       // remove in production but make sure it would happen
       if (!chats.find((chat) => chat.id === chatId)) {
-        throw ({ message: `Chat ${chatId} does not exist` });
+        throw new Error({message: `Chat ${chatId} does not exist`});
       }
 
       if (!participantIds.includes(ownerId)) {
-        throw ({ message: `you are not one of the member in the chat` });
+        throw new Error({message: `you are not one of the member in the chat`});
       }
 
-      userList.push({ id, userDoc, userRef });
+      userList.push({id, userDoc, userRef});
     }));
 
     await Promise.all(userList.map(async (user) => {
@@ -117,26 +117,26 @@ router.post("/chat/update", authenticateToken, async (req, res) => {
       });
     }));
 
-    res.status(200).json({ message: "Chat updated successfully", chatId: chatId });
+    res.status(200).json({message: "Chat updated successfully", chatId: chatId});
   } catch (error) {
     res.status(500).json({
       error: "Error updating chat",
-      message: error.message
+      message: error.message,
     });
   }
 });
 
 router.delete("/chat/delete", authenticateToken, async (req, res) => {
-  const { chatId, participantIds } = req.body;
+  const {chatId, participantIds} = req.body;
 
   const schema = Joi.object({
     chatId: Joi.string().required(),
     participantIds: Joi.array().items(Joi.string()).required(),
   }).required();
 
-  const { error } = schema.validate(req.body);
+  const {error} = schema.validate(req.body);
   if (error) {
-    return res.status(400).json({ error: error.details[0].message });
+    return res.status(400).json({error: error.details[0].message});
   }
 
   try {
@@ -146,16 +146,16 @@ router.delete("/chat/delete", authenticateToken, async (req, res) => {
       const userDoc = await userRef.get();
 
       if (!userDoc.exists) {
-        throw ({ message: `User ${id} does not exist` });
+        throw new Error({message: `User ${id} does not exist`});
       }
       const chats = userDoc.data().chats || [];
 
       // remove in production but make sure it would happen in testing
       if (!chats.find((chat) => chat.id === chatId)) {
-        throw ({ message: `Chat ${chatId} does not exist` });
+        throw new Error({message: `Chat ${chatId} does not exist`});
       }
 
-      userList.push({ id, userDoc, userRef });
+      userList.push({id, userDoc, userRef});
     }));
 
     await Promise.all(userList.map(async (user) => {
@@ -171,18 +171,18 @@ router.delete("/chat/delete", authenticateToken, async (req, res) => {
       });
     }));
 
-    res.status(200).json({ message: "Chat deleted successfully", chatId: chatId });
+    res.status(200).json({message: "Chat deleted successfully", chatId: chatId});
   } catch (error) {
     res.status(500).json({
       error: "Error deleting chat",
-      message: error.message
+      message: error.message,
     });
   }
 });
 
 
 router.post("/chat/sendMessage", authenticateToken, async (req, res) => {
-  const { owner, message, chatId, receiverIds } = req.body;
+  const {owner, message, chatId, receiverIds} = req.body;
 
   const schema = Joi.object({
     owner: Joi.object({
@@ -194,16 +194,16 @@ router.post("/chat/sendMessage", authenticateToken, async (req, res) => {
     receiverIds: Joi.array().items(Joi.string()).required(),
   });
 
-  const { error } = schema.validate(req.body);
+  const {error} = schema.validate(req.body);
   if (error) {
-    return res.status(400).json({ error: error.details[0].message });
+    return res.status(400).json({error: error.details[0].message});
   }
 
   try {
     owner.userId = decodeToken(req.get("Authorization")).id;
-    
+
     if (!receiverIds.includes(owner.userId)) {
-      throw ({ message: `you are not one of the member in the chat` });
+      throw new Error({message: `you are not one of the member in the chat`});
     }
 
     const userList = [];
@@ -212,19 +212,19 @@ router.post("/chat/sendMessage", authenticateToken, async (req, res) => {
       const userDoc = await userRef.get();
 
       if (!userDoc.exists) {
-        throw ({ message: `User ${id} does not exist` });
+        throw new Error({message: `User ${id} does not exist`});
       }
       const chats = userDoc.data().chats || [];
 
       // remove in production but make sure it would happen in testing
       if (!chats.find((chat) => chat.id === chatId)) {
-        throw ({ message: `Chat ${chatId} does not exist` });
+        throw new Error({message: `Chat ${chatId} does not exist`});
       }
 
-      userList.push({ id, userDoc, userRef });
+      userList.push({id, userDoc, userRef});
     }));
 
-    const messageId = await generateId({ collection: "message", idPrefix: "MS", length: 12 });
+    const messageId = await generateId({collection: "message", idPrefix: "MS", length: 12});
     const messageRef = db.collection("messages").doc(messageId);
     await messageRef.set({
       id: messageId,
@@ -249,18 +249,17 @@ router.post("/chat/sendMessage", authenticateToken, async (req, res) => {
         chats: chats,
       });
     }));
-    res.status(200).json({ message: "Message sent successfully" });
-
+    res.status(200).json({message: "Message sent successfully"});
   } catch (error) {
     res.status(500).json({
       error: "Error sending message",
-      message: error.message
+      message: error.message,
     });
   }
 });
 
 router.post("/chat/member/add", authenticateToken, async (req, res) => {
-  const { addedUserId, chatId, participantIds } = req.body;
+  const {addedUserId, chatId, participantIds} = req.body;
 
   const schema = Joi.object({
     addedUserId: Joi.string().required(),
@@ -268,9 +267,9 @@ router.post("/chat/member/add", authenticateToken, async (req, res) => {
     participantIds: Joi.array().items(Joi.string()).required(),
   }).required();
 
-  const { error } = schema.validate(req.body);
+  const {error} = schema.validate(req.body);
   if (error) {
-    return res.status(400).json({ error: error.details[0].message });
+    return res.status(400).json({error: error.details[0].message});
   }
 
   try {
@@ -280,42 +279,42 @@ router.post("/chat/member/add", authenticateToken, async (req, res) => {
       const userDoc = await userRef.get();
 
       if (!userDoc.exists) {
-        throw ({ message: `User ${id} does not exist` });
+        throw new Error({message: `User ${id} does not exist`});
       }
       const chats = userDoc.data().chats || [];
 
       // remove in production but make sure it would happen in testing
       if (!chats.find((chat) => chat.id === chatId)) {
-        throw ({ message: `Chat ${chatId} does not exist` });
+        throw new Error({message: `Chat ${chatId} does not exist`});
       }
 
-      if(id === addedUserId) {
-        throw ({ message: `User ${addedUserId} already in the chat` });
+      if (id === addedUserId) {
+        throw new Error({message: `User ${addedUserId} already in the chat`});
       }
 
-      userList.push({ id, userDoc, userRef });
+      userList.push({id, userDoc, userRef});
     }));
 
     const addedUserRef = db.collection("users").doc(addedUserId);
     const addedUserDoc = await addedUserRef.get();
 
     if (!addedUserDoc.exists) {
-      throw ({ message: `User ${addedUserId} does not exist` });
+      throw new Error({message: `User ${addedUserId} does not exist`});
     }
     const addedUserChats = addedUserDoc.data().chats || [];
 
     if (addedUserChats.find((chat) => chat.id === chatId)) {
-      throw ({ message: `User ${addedUserId} already in the chat` });
+      throw new Error({message: `User ${addedUserId} already in the chat`});
     }
 
     addedUserChats.push({
-        id: chatId,
-        participantIds: [...participantIds, addedUserId],
-      })
+      id: chatId,
+      participantIds: [...participantIds, addedUserId],
+    });
 
-      await addedUserRef.set({
-        chats: addedUserChats,
-      });
+    await addedUserRef.set({
+      chats: addedUserChats,
+    });
 
     await Promise.all(userList.map(async (user) => {
       const chats = user.userDoc.data().chats || [];
@@ -328,17 +327,17 @@ router.post("/chat/member/add", authenticateToken, async (req, res) => {
       });
     }));
 
-    res.status(200).json({ message: "Member added successfully", chatId: chatId });
+    res.status(200).json({message: "Member added successfully", chatId: chatId});
   } catch (error) {
     res.status(500).json({
       error: "Error adding member",
-      message: error.message
+      message: error.message,
     });
   }
 });
 
 router.delete("/chat/member/kick", authenticateToken, async (req, res) => {
-  const { kickedUserId, chatId, participantIds } = req.body;
+  const {kickedUserId, chatId, participantIds} = req.body;
 
   const schema = Joi.object({
     kickedUserId: Joi.string().required(),
@@ -346,33 +345,33 @@ router.delete("/chat/member/kick", authenticateToken, async (req, res) => {
     participantIds: Joi.array().items(Joi.string()).required(),
   }).required();
 
-  const { error } = schema.validate(req.body);
+  const {error} = schema.validate(req.body);
   if (error) {
-    return res.status(400).json({ error: error.details[0].message });
+    return res.status(400).json({error: error.details[0].message});
   }
 
   try {
     const userList = [];
 
-    if(!participantIds.find((id) => id === kickedUserId)) {
-      throw ({ message: `User ${kickedUserId} is not in the chat` });
+    if (!participantIds.find((id) => id === kickedUserId)) {
+      throw new Error({message: `User ${kickedUserId} is not in the chat`});
     }
 
     await Promise.all(participantIds.map(async (id) => {
       const userRef = db.collection("users").doc(id);
       const userDoc = await userRef.get();
-      
+
       if (!userDoc.exists) {
-        throw ({ message: `User ${id} does not exist` });
+        throw new Error({message: `User ${id} does not exist`});
       }
       const chats = userDoc.data().chats || [];
 
       // remove in production but make sure it would happen in testing
       if (!chats.find((chat) => chat.id === chatId)) {
-        throw ({ message: `Chat ${chatId} does not exist` });
+        throw new Error({message: `Chat ${chatId} does not exist`});
       }
 
-      userList.push({ id, userDoc, userRef });
+      userList.push({id, userDoc, userRef});
     }));
 
     await Promise.all(userList.map(async (user) => {
@@ -386,11 +385,11 @@ router.delete("/chat/member/kick", authenticateToken, async (req, res) => {
       });
     }));
 
-    res.status(200).json({ message: "Member kicked successfully", chatId: chatId });
+    res.status(200).json({message: "Member kicked successfully", chatId: chatId});
   } catch (error) {
     res.status(500).json({
       error: "Error kicking member",
-      message: error.message
+      message: error.message,
     });
   }
 });

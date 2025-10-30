@@ -3,18 +3,18 @@ const router = new express.Router();
 const admin = require("firebase-admin");
 const db = admin.firestore();
 const Joi = require("joi");
-const { generateId, authenticateToken, decodeToken } = require("../../utils");
+const {generateId, authenticateToken, decodeToken} = require("../../utils");
 
 router.post("/futureEvent/create", authenticateToken, async (req, res) => {
-  const { data } = req.body;
+  const {data} = req.body;
 
   const schema = Joi.object({
     data: Joi.object({
       title: Joi.string().required(),
-      images: Joi.array().items(Joi.string().allow(null, '')).optional(),
+      images: Joi.array().items(Joi.string().allow(null, "")).optional(),
       desc: Joi.string().required(),
       eventType: Joi.string().required(),
-      locationAvatar: Joi.string().allow(null, ''),
+      locationAvatar: Joi.string().allow(null, ""),
       location: Joi.object({
         id: Joi.string().required(),
         name: Joi.string().required(),
@@ -26,15 +26,15 @@ router.post("/futureEvent/create", authenticateToken, async (req, res) => {
     }).required(),
   });
 
-  const { error } = schema.validate(req.body);
+  const {error} = schema.validate(req.body);
   if (error) {
-    return res.status(400).json({ error: error.details[0].message });
+    return res.status(400).json({error: error.details[0].message});
   }
 
   try {
-    const { title, images, desc, eventType, locationAvatar, location, operationTime } = data;
+    const {title, images, desc, eventType, locationAvatar, location, operationTime} = data;
 
-    const eventId = await generateId({ collection: "futureEvents", idPrefix: "FE"});
+    const eventId = await generateId({collection: "futureEvents", idPrefix: "FE"});
     const eventRef = db.collection("futureEvents").doc(eventId);
     const ownerId = decodeToken(req.get("Authorization")).id;
 
@@ -49,26 +49,26 @@ router.post("/futureEvent/create", authenticateToken, async (req, res) => {
       images: images,
       desc: desc,
     });
-    res.status(200).json({ message: "Event created successfully", eventId: eventId });
+    res.status(200).json({message: "Event created successfully", eventId: eventId});
   } catch (error) {
     res.status(500).json({
       error: "Error creating event",
-      message: error.message
+      message: error.message,
     });
   }
 });
 
 router.post("/futureEvent/update", authenticateToken, async (req, res) => {
-  const { id, data } = req.body;
+  const {id, data} = req.body;
 
   const schema = Joi.object({
     id: Joi.string().required(),
     data: Joi.object({
       title: Joi.string().required(),
-      images: Joi.array().items(Joi.string().allow(null, '')).optional(),
+      images: Joi.array().items(Joi.string().allow(null, "")).optional(),
       desc: Joi.string().required(),
       eventType: Joi.string().required(),
-      locationAvatar: Joi.string().allow(null, ''),
+      locationAvatar: Joi.string().allow(null, ""),
       location: Joi.object({
         id: Joi.string().required(),
         name: Joi.string().required(),
@@ -80,23 +80,23 @@ router.post("/futureEvent/update", authenticateToken, async (req, res) => {
     }).required(),
   });
 
-  const { error } = schema.validate(req.body);
+  const {error} = schema.validate(req.body);
   if (error) {
-    return res.status(400).json({ error: error.details[0].message });
+    return res.status(400).json({error: error.details[0].message});
   }
 
   try {
-    const { title, images, desc, eventType, locationAvatar, location, operationTime } = data;
+    const {title, images, desc, eventType, locationAvatar, location, operationTime} = data;
     const eventRef = db.collection("futureEvents").doc(id);
     const userId = decodeToken(req.get("Authorization")).id;
 
     const eventDoc = await eventRef.get();
     if (!eventDoc.exists) {
-      return res.status(404).json({ error: "Event not found" });
+      return res.status(404).json({error: "Event not found"});
     }
 
     if (eventDoc.data().ownerId !== userId) {
-      return res.status(403).json({ error: "Forbidden: You are not the owner of this event" });
+      return res.status(403).json({error: "Forbidden: You are not the owner of this event"});
     }
 
     await eventRef.update({
@@ -108,25 +108,25 @@ router.post("/futureEvent/update", authenticateToken, async (req, res) => {
       images: images,
       desc: desc,
     });
-    res.status(200).json({ message: "Event updated successfully", eventId: id });
+    res.status(200).json({message: "Event updated successfully", eventId: id});
   } catch (error) {
     res.status(500).json({
       error: "Error updating event",
-      message: error.message
+      message: error.message,
     });
   }
 });
 
 router.delete("/futureEvent/delete", authenticateToken, async (req, res) => {
-  const { id } = req.body;
+  const {id} = req.body;
 
   const schema = Joi.object({
     id: Joi.string().required(),
   });
 
-  const { error } = schema.validate(req.body);
+  const {error} = schema.validate(req.body);
   if (error) {
-    return res.status(400).json({ error: error.details[0].message });
+    return res.status(400).json({error: error.details[0].message});
   }
 
   try {
@@ -135,23 +135,23 @@ router.delete("/futureEvent/delete", authenticateToken, async (req, res) => {
 
     const eventDoc = await eventRef.get();
     if (!eventDoc.exists) {
-      return res.status(404).json({ error: "Event not found" });
+      return res.status(404).json({error: "Event not found"});
     }
 
     if (eventDoc.data().ownerId !== userId) {
-      return res.status(403).json({ error: "Forbidden: You are not the owner of this event" });
+      return res.status(403).json({error: "Forbidden: You are not the owner of this event"});
     }
 
     // send notification to all participant
     await eventRef.delete();
-    res.status(200).json({ message: "Event deleted successfully", eventId: id });
+    res.status(200).json({message: "Event deleted successfully", eventId: id});
   } catch (error) {
-    res.status(500).json({ error: "Error deleting event", message: error.message });
+    res.status(500).json({error: "Error deleting event", message: error.message});
   }
 });
 
 router.post("/futureEvent/comment/create", authenticateToken, async (req, res) => {
-  const { eventId, comment } = req.body;
+  const {eventId, comment} = req.body;
 
   const schema = Joi.object({
     eventId: Joi.string().required(),
@@ -162,24 +162,24 @@ router.post("/futureEvent/comment/create", authenticateToken, async (req, res) =
     }).required(),
   }).required();
 
-  const { error } = schema.validate(req.body);
+  const {error} = schema.validate(req.body);
   if (error) {
-    return res.status(400).json({ error: error.details[0].message });
+    return res.status(400).json({error: error.details[0].message});
   }
 
 
   try {
-    const { name, avatar, content } = comment;
-    const commentId = await generateId({ collection: "comments", idPrefix: "C", length: 12 });
+    const {name, avatar, content} = comment;
+    const commentId = await generateId({collection: "comments", idPrefix: "C", length: 12});
     const commentRef = db.collection("comments").doc(commentId);
     const commentDoc = await commentRef.get();
     if (commentDoc.exists) {
-      return res.status(400).json({ error: "Comment already exists" });
+      return res.status(400).json({error: "Comment already exists"});
     }
 
     const eventDoc = await db.collection("futureEvents").doc(eventId).get();
     if (!eventDoc.exists) {
-      return res.status(404).json({ error: "Event not found" });
+      return res.status(404).json({error: "Event not found"});
     }
 
     await commentRef.set({
@@ -192,17 +192,17 @@ router.post("/futureEvent/comment/create", authenticateToken, async (req, res) =
       likeCount: 0,
     });
 
-    res.status(200).json({ message: "Comment added successfully", commentId: commentId });
+    res.status(200).json({message: "Comment added successfully", commentId: commentId});
   } catch (error) {
     res.status(500).json({
       error: "Error adding comment",
-      message: error.message
+      message: error.message,
     });
   }
 });
 
 router.post("/futureEvent/comment/update", authenticateToken, async (req, res) => {
-  const { commentId, comment } = req.body;
+  const {commentId, comment} = req.body;
 
   const schema = Joi.object({
     commentId: Joi.string().required(),
@@ -213,22 +213,22 @@ router.post("/futureEvent/comment/update", authenticateToken, async (req, res) =
     }).required(),
   }).required();
 
-  const { error } = schema.validate(req.body);
+  const {error} = schema.validate(req.body);
   if (error) {
-    return res.status(400).json({ error: error.details[0].message });
+    return res.status(400).json({error: error.details[0].message});
   }
 
   try {
-    const { name, avatar, content } = comment;
+    const {name, avatar, content} = comment;
     const commentRef = db.collection("comments").doc(commentId);
     const commentDoc = await commentRef.get();
     if (!commentDoc.exists) {
-      return res.status(404).json({ error: "Comment not found" });
+      return res.status(404).json({error: "Comment not found"});
     }
 
     const eventDoc = await db.collection("futureEvents").doc(commentDoc.data().eventId).get();
     if (!eventDoc.exists) {
-      return res.status(404).json({ error: "Event not found" });
+      return res.status(404).json({error: "Event not found"});
     }
 
     // if (commentDoc.data().ownerId !== userId) {
@@ -241,34 +241,34 @@ router.post("/futureEvent/comment/update", authenticateToken, async (req, res) =
       content: content,
       updateAt: new Date().getTime(),
     });
-    res.status(200).json({ message: "Comment updated successfully", commentId: commentId });
+    res.status(200).json({message: "Comment updated successfully", commentId: commentId});
   } catch (error) {
     res.status(500).json({
       error: "Error updating comment",
-      message: error.message
+      message: error.message,
     });
   }
 });
 
 router.delete("/futureEvent/comment/delete", authenticateToken, async (req, res) => {
-  const { commentId } = req.body;
+  const {commentId} = req.body;
 
   const schema = Joi.object({
     commentId: Joi.string().required(),
   });
 
-  const { error } = schema.validate(req.body);
+  const {error} = schema.validate(req.body);
   if (error) {
-    return res.status(400).json({ error: error.details[0].message });
+    return res.status(400).json({error: error.details[0].message});
   }
 
   try {
     const commentRef = db.collection("comments").doc(commentId);
-    const userId = decodeToken(req.get("Authorization")).id;
+    // const userId = decodeToken(req.get("Authorization")).id;
 
     const commentDoc = await commentRef.get();
     if (!commentDoc.exists) {
-      return res.status(404).json({ error: "Comment not found" });
+      return res.status(404).json({error: "Comment not found"});
     }
 
     // if (commentDoc.data().ownerId !== userId) {
@@ -277,14 +277,14 @@ router.delete("/futureEvent/comment/delete", authenticateToken, async (req, res)
 
     const eventDoc = await db.collection("futureEvents").doc(commentDoc.data().eventId).get();
     if (!eventDoc.exists) {
-      return res.status(404).json({ error: "Event not found" });
+      return res.status(404).json({error: "Event not found"});
     }
 
     await commentRef.delete({
     });
-    res.status(200).json({ message: "Comment deleted successfully", commentId: commentId });
+    res.status(200).json({message: "Comment deleted successfully", commentId: commentId});
   } catch (error) {
-    res.status(500).json({ error: "Error deleting comment", message: error.message });
+    res.status(500).json({error: "Error deleting comment", message: error.message});
   }
 });
 

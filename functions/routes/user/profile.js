@@ -6,12 +6,12 @@ const Joi = require("joi");
 const {decodeToken, authenticateToken} = require("../../utils");
 
 router.post("/profile/update", authenticateToken, async (req, res) => {
-  const { data } = req.body;
+  const {data} = req.body;
 
   const schema = Joi.object({
     data: Joi.object({
       name: Joi.string().required(),
-      avatar: Joi.string().allow("",null),
+      avatar: Joi.string().allow("", null),
       sex: Joi.string().required(),
     }).required(),
   });
@@ -32,8 +32,10 @@ router.post("/profile/update", authenticateToken, async (req, res) => {
     });
     res.status(200).json({message: "Profile updated successfully"});
   } catch (error) {
-    res.status(500).json({error: "Error updating profile",
-      message: error.message});
+    res.status(500).json({
+      error: "Error updating profile",
+      message: error.message,
+    });
   }
 });
 
