@@ -3,7 +3,9 @@ const db = admin.firestore();
 const jwt = require("jsonwebtoken");
 
 const generateRandomNum = (length) => {
-  return Math.floor(Math.random() * Math.pow(10, length));
+  const min = Math.pow(10, length - 1);
+  const max = Math.pow(10, length) - 1;
+  return Math.floor(Math.random() * (max - min + 1)) + min;
 };
 
 const generateToken = (user) => {
@@ -50,13 +52,27 @@ const generateId = ({collection, idPrefix, length}) => {
 const authenticateToken = (req, res, next) => {
   const token = req.get("Authorization");
 
-  if (!token) return res.status(401).json({ error: `No token provided` });
+  if (!token) return res.status(401).json({error: `No token provided`});
 
   jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-    if (err) return res.status(403).json({ error: "Invalid or expired token" }); // invalid or expired
+    if (err) return res.status(403).json({error: "Invalid or expired token"}); // invalid or expired
     req.user = decoded; // store payload in req.user
     next();
   });
+};
+
+const boundingBox = (lat, lon, radiusKm) => {
+  const earthRadiusKm = 6371;
+  const pi = Math.PI;
+  const latDelta = radiusKm / earthRadiusKm * (180 / pi);
+  const lonDelta = radiusKm / (earthRadiusKm * Math.cos(lat * pi / 180)) * (180 / pi);
+
+  return {
+    minLat: lat - latDelta,
+    maxLat: lat + latDelta,
+    minLng: lon - lonDelta,
+    maxLng: lon + lonDelta,
+  };
 };
 
 module.exports = {
@@ -65,4 +81,5 @@ module.exports = {
   generateId: generateId,
   authenticateToken: authenticateToken,
   decodeToken: decodeToken,
+  boundingBox: boundingBox,
 };

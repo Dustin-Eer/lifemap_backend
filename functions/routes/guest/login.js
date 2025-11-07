@@ -62,7 +62,7 @@ router.post("/loginOrRegister", async (req, res) => {
 
     const users = snapshot.docs.map((doc) => ({id: doc.id, ...doc.data()}));
     if (users.length === 0) {
-      return res.status(200).json({message: "Please register as a new user", users: []});
+      return res.status(202).json({message: "Please register as a new user", users: []});
     }
 
     const user = users[0];

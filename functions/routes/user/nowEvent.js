@@ -18,7 +18,6 @@ router.post("/nowEvent/create", authenticateToken, async (req, res) => {
       eventType: Joi.string().required(),
       eventStatus: Joi.string().required(),
       location: Joi.object({
-        id: Joi.string().required(),
         name: Joi.string().required(),
         address: Joi.string().required(),
         lat: Joi.number().required(),
@@ -26,9 +25,9 @@ router.post("/nowEvent/create", authenticateToken, async (req, res) => {
       }).required(),
       startDate: Joi.number().required(),
       endDate: Joi.number().required(),
-      maxParticipants: Joi.number().required(),
+      maxParticipants: Joi.number().max(100).required(),
       images: Joi.array().items(Joi.string().allow(null, "")).optional(),
-      desc: Joi.string().required(),
+      desc: Joi.string().allow(null, ""),
     }).required(),
   });
 
@@ -84,7 +83,6 @@ router.post("/nowEvent/update", authenticateToken, async (req, res) => {
       eventStatus: Joi.string().required(),
       eventType: Joi.string().required(),
       location: Joi.object({
-        id: Joi.string().required(),
         name: Joi.string().required(),
         address: Joi.string().required(),
         lat: Joi.number().required(),
@@ -92,9 +90,9 @@ router.post("/nowEvent/update", authenticateToken, async (req, res) => {
       }).required(),
       startDate: Joi.number().required(),
       endDate: Joi.number().required(),
-      maxParticipants: Joi.number().required(),
+      maxParticipants: Joi.number().max(100).required(),
       images: Joi.array().items(Joi.string().allow(null, "")).optional(),
-      desc: Joi.string().required(),
+      desc: Joi.string().allow(null, ""),
     }).required(),
   });
 
