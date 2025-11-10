@@ -23,6 +23,11 @@ router.post("/nowEvent/create", authenticateToken, async (req, res) => {
         lat: Joi.number().required(),
         lng: Joi.number().required(),
       }).required(),
+      invitedFriends: Joi.array().items(Joi.object({
+        id: Joi.string().required(),
+        name: Joi.string().required(),
+        avatar: Joi.string().allow(null, ""),
+      })).required(),
       startDate: Joi.number().required(),
       endDate: Joi.number().required(),
       maxParticipants: Joi.number().max(100).required(),
@@ -37,7 +42,7 @@ router.post("/nowEvent/create", authenticateToken, async (req, res) => {
   }
 
   try {
-    const {title, eventType, eventStatus, location, startDate, endDate, maxParticipants, images, desc} = data;
+    const {title, eventType, eventStatus, location, startDate, endDate, maxParticipants, images, desc, invitedFriends} = data;
     const eventId = await generateId({collection: "nowEvents", idPrefix: "NE"});
     const eventRef = db.collection("nowEvents").doc(eventId);
     const ownerId = decodeToken(req.get("Authorization")).id;
@@ -45,7 +50,12 @@ router.post("/nowEvent/create", authenticateToken, async (req, res) => {
       id: ownerId,
       name: owner.name,
       avatar: owner.avatar,
-    }];
+    }, ...invitedFriends.map((friend) => ({
+      id: friend.id,
+      name: friend.name,
+      avatar: friend.avatar,
+      temp: true,
+    }))];
     const participantIds = participants.map((p) => p.id);
 
     await eventRef.set({
@@ -91,6 +101,11 @@ router.post("/nowEvent/update", authenticateToken, async (req, res) => {
       startDate: Joi.number().required(),
       endDate: Joi.number().required(),
       maxParticipants: Joi.number().max(100).required(),
+      invitedFriends: Joi.array().items(Joi.object({
+        id: Joi.string().required(),
+        name: Joi.string().required(),
+        avatar: Joi.string().allow(null, ""),
+      })).required(),
       images: Joi.array().items(Joi.string().allow(null, "")).optional(),
       desc: Joi.string().allow(null, ""),
     }).required(),
@@ -102,7 +117,7 @@ router.post("/nowEvent/update", authenticateToken, async (req, res) => {
   }
 
   try {
-    const {title, eventType, eventStatus, location, startDate, endDate, maxParticipants, images, desc} = data;
+    const {title, eventType, eventStatus, location, startDate, endDate, maxParticipants, images, desc, invitedFriends} = data;
     const eventRef = db.collection("nowEvents").doc(id);
     const userId = decodeToken(req.get("Authorization")).id;
 
@@ -115,6 +130,22 @@ router.post("/nowEvent/update", authenticateToken, async (req, res) => {
       return res.status(403).json({error: "Forbidden: You are not the owner of this event"});
     }
 
+    const currentParticipants = eventDoc.data().participants.filter(p => p.temp !== true);
+    const existingIds = new Set(currentParticipants.map(p => p.id));
+    const newInvited = invitedFriends
+      .filter(friend => !existingIds.has(friend.id))
+      .map((friend) => ({
+        id: friend.id,
+        name: friend.name,
+        avatar: friend.avatar,
+        temp: true,
+      }));
+    const newParticipants = [...currentParticipants, ...newInvited];
+
+    if (newParticipants.length > maxParticipants) {
+      return res.status(400).json({error: "Max participants reached"});
+    }
+
     await eventRef.update({
       title: title,
       eventType: eventType,
@@ -123,6 +154,8 @@ router.post("/nowEvent/update", authenticateToken, async (req, res) => {
       startDate: startDate,
       endDate: endDate,
       maxParticipants: maxParticipants,
+      participants: newParticipants,
+      participantIds: newParticipants.map((p) => p.id),
       images: images,
       desc: desc,
       updateAt: new Date().getTime(),
