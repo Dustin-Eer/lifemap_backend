@@ -129,7 +129,7 @@ router.post("/nowEvent/update", authenticateToken, async (req, res) => {
       return res.status(403).json({error: "Forbidden: You are not the owner of this event"});
     }
 
-    if (newParticipants.length > maxParticipants) {
+    if ((eventDoc.data().participants.length + invitedFriends.length) > maxParticipants) {
       return res.status(400).json({error: "Max participants reached"});
     }
 
