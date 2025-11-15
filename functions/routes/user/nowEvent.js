@@ -31,7 +31,7 @@ router.post("/nowEvent/create", authenticateToken, async (req, res) => {
       startDate: Joi.number().required(),
       endDate: Joi.number().required(),
       maxParticipants: Joi.number().max(100).required(),
-      images: Joi.array().items(Joi.string().allow(null, "")).optional(),
+      image: Joi.string().allow(null, "").optional(),
       desc: Joi.string().allow(null, ""),
     }).required(),
   });
@@ -43,7 +43,7 @@ router.post("/nowEvent/create", authenticateToken, async (req, res) => {
 
   try {
     const {title, eventType, eventStatus, location, startDate, endDate,
-      maxParticipants, images, desc, invitedFriends} = data;
+      maxParticipants, image, desc, invitedFriends} = data;
     const eventId = await generateId({collection: "nowEvents", idPrefix: "NE"});
     const eventRef = db.collection("nowEvents").doc(eventId);
     const ownerId = decodeToken(req.get("Authorization")).id;
@@ -68,7 +68,7 @@ router.post("/nowEvent/create", authenticateToken, async (req, res) => {
       invitedFriends: invitedFriends,
       participants: participants,
       participantIds: participantIds,
-      images: images,
+      image: image,
       desc: desc,
       createAt: new Date().getTime(),
     });
@@ -104,7 +104,7 @@ router.post("/nowEvent/update", authenticateToken, async (req, res) => {
         name: Joi.string().required(),
         avatar: Joi.string().allow(null, ""),
       })).required(),
-      images: Joi.array().items(Joi.string().allow(null, "")).optional(),
+      image: Joi.string().allow(null, "").optional(),
       desc: Joi.string().allow(null, ""),
     }).required(),
   });
@@ -116,7 +116,7 @@ router.post("/nowEvent/update", authenticateToken, async (req, res) => {
 
   try {
     const {title, eventType, eventStatus, location, startDate, endDate,
-      maxParticipants, images, desc, invitedFriends} = data;
+      maxParticipants, image, desc, invitedFriends} = data;
     const eventRef = db.collection("nowEvents").doc(id);
     const userId = decodeToken(req.get("Authorization")).id;
 
@@ -142,7 +142,7 @@ router.post("/nowEvent/update", authenticateToken, async (req, res) => {
       endDate: endDate,
       maxParticipants: maxParticipants,
       invitedFriends: invitedFriends,
-      images: images,
+      image: image,
       desc: desc,
       updateAt: new Date().getTime(),
     });
