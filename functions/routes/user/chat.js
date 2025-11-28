@@ -6,10 +6,12 @@ const Joi = require("joi");
 const {decodeToken, generateId, authenticateToken} = require("../../utils");
 
 router.post("/chat/create", authenticateToken, async (req, res) => {
-  const {participantIds} = req.body;
+  const {participantIds, groupName, groupAvatar} = req.body;
 
   const schema = Joi.object({
     participantIds: Joi.array().items(Joi.string()).required(),
+    groupName: Joi.string().allow("", null),
+    groupAvatar: Joi.string().allow("", null),
   }).required();
 
   const {error} = schema.validate(req.body);
@@ -40,10 +42,12 @@ router.post("/chat/create", authenticateToken, async (req, res) => {
       const chats = user.userDoc.data().chats || [];
       chats.push({
         id: chatId,
+        ...(groupName !== null && groupName !== undefined && {groupName}),
+        ...(groupAvatar !== null && groupAvatar !== undefined && {groupAvatar}),
         participantIds: participantIds,
       });
 
-      await user.userRef.set({
+      await user.userRef.update({
         chats: chats,
       });
     }));
@@ -312,7 +316,7 @@ router.post("/chat/member/add", authenticateToken, async (req, res) => {
       participantIds: [...participantIds, addedUserId],
     });
 
-    await addedUserRef.set({
+    await addedUserRef.update({
       chats: addedUserChats,
     });
 
